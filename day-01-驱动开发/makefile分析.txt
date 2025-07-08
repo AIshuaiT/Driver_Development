@@ -1,0 +1,52 @@
+$(warning KERNELRELEASE=$(KERNELRELEASE))
+#$(warning <text>)
+#打印 KERNELRELEASE=变量内容
+
+
+ifeq ($(KERNELRELEASE),)
+#如果KERNELRELEASE内容为空，if为真
+
+
+
+#KERNELDIR ?= /home/lht/kernel2.6/linux-2.6.14
+
+KERNELDIR ?= /lib/modules/$(shell uname -r)/build  
+#给KERNELDIR赋值 /lib/modules/$(shell uname -r)/build
+
+#KERNELDIR ?= /lib/modules/3.11.0-26-generic/build 
+#$(shell uname -r) 获得当前内核版本
+
+
+
+
+PWD := $(shell pwd)
+#PWD变量赋值：当前目录（makefile存在的目录，源码存在的目录）
+
+
+modules:
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+#$(MAKE) -C $(KERNELDIR)  进入到$(KERNELDIR)  /lib/modules/3.11.0-26-generic/build  执行makefile
+#M=$(PWD) 编译当前路径下的模块
+#modules  目标
+
+
+
+modules_install:
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules_install
+
+
+clean:
+	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions Module* modules*
+
+
+.PHONY: modules modules_install clean
+
+
+
+
+else
+#如果KERNELRELEASE内容不为空，if为假,else执行
+    obj-m := hello.o
+
+
+endif

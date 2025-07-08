@@ -1,0 +1,201 @@
+【1】驱动 -- 承上启下
+	（1）向下操作硬件   -- ARM
+	（2）给系统提供操作硬件的接口
+
+
+【2】VFS作用：给用户空间提供了统一的文件操作接口
+
+
+【3】设备驱动按照访问方式分为下面三类：
+
+（1）字符设备驱动：按字节访问， 一般只能顺序操作的设备，特殊情况下也可以进行随机访问（frambuf设备）。
+			   鼠标，键盘
+			   c  -- 字符设备文件
+
+（2）块设备驱动：按固定的大小访问，能都随机操作。 块设备驱动都配有一个缓冲区。
+              磁盘、nandflash、emmc 
+              b  -- 块设备文件
+
+（3）网络设备驱动：有自己的一套机制和接口，socket --> sk_buf
+
+
+
+=========================================================================
+【4】linux怎么去描述一个字符设备
+
+                               |-- 属性：设备号 dev_t devno （1）
+    类 -- 字符设备结构体 -- struct cdev（3）--   
+			                   |-- 方法：struct fileoperations（2）
+
+
+
+
+【5】设备号：linux用来标识一个设备 【(mknod /dev/hello c 250 0)./a.out时】 -----------------> 属性
+
+（1）设备号 dev_t  dvno;              sudo rm /dev/hello 
+    实质是一个32位无符号整数
+
+ 
+（2）主设备号：高12位，不同设备
+    次设备号：低20位，该类型设备中的哪个
+
+
+
+（3）创建设备号
+  1-- dev_t devno = (主设备号<< 20) | 次设备号；
+
+  2-- 使用内核提供的宏，MKDEV，移植性更高
+      #define MKDEV(ma,mi)	(((ma) << MINORBITS) | (mi))
+
+  例子：
+		int  maj = 500；
+		int  min = 0；
+		dev_t  devno = MKDEV(maj,min);
+
+
+（4）注册（申请）设备号
+  1-- 告诉linux内核，我要使用这个设备号
+
+  2-- 静态注册
+	int register_chrdev_region(dev_t from, unsigned count, const char *name)
+	功能：注册一段设备号
+	
+ 	输入参数：
+		from: 第一个设备号
+		count:申请几个设备号
+        name: 设备名称
+
+	返回值：成功返回0，失败返回负的错误码
+
+
+	例子：
+		int  maj = 500；
+		int  min = 0；
+		dev_t  devno = MKDEV(maj,min); //创建设备号
+
+		int  rec=0；
+		if(rec =register_chrdev_region(devno,1,"hello_device"))//注册
+		{
+		   printK("registre devno eror\n");
+		   return rec;
+		}
+
+ 
+    3-- 放在加载函数中
+       static int __init hello_2_init (void)
+       {   ....  }
+        
+
+
+（5）释放设备号
+	1-- void unregister_chrdev_region(dev_t from, unsigned count)
+	  功能：释放设备号
+
+	  输入参数： from ：第一个要释放的设备号
+			   count：释放几个
+
+	2-- 放在卸载函数中
+	   static void __exit hello_2_exit (void)
+	   {   ....  }
+
+
+
+（6）完整流程
+	 1-- 创建设备号           (1-- 定义设备号/2-- 初始化设备号)
+	 3-- 注册（申请）设备号
+	 4-- 释放设备号 
+
+
+（7）注册成功后，可以在/proc/devices里查看到主设备号和设备名称
+     250 hello_device
+
+
+（8）设备号静态创建时需要注意：不能和已经分配和已使用的冲突！
+  1-- cat /proc/devices  放的是已经使用的设备号
+  2-- Documentation/devices.txt  放的是内核已经分配了的设备号  260以上
+
+
+【6】动态注册设备号
+	（1）int alloc_chrdev_region(dev_t *dev, unsigned baseminor, unsigned count,const char * name)
+		 功能： 动态注册设备号，并把申请到的设备号返回。
+
+		 参数： dev ：接受返回的设备号
+			   baseminor：第一个次设备号
+			   count： 申请多少个
+			   name : 设备名称
+
+		 返回值：成功返回0 ，失败返回负的错误码。
+
+
+	（2）动态注册和静态注册的区别：
+	 1-- 动态注册 ：不会冲突、设备号不确定、占时
+	 2-- 静态注册： 有可能冲突、设备号确定、不占时
+
+
+
+=========================================================================
+------------------------------------------------------------------------    
+
+
+【7】file_operations结构体                                                     -----------------> 方法     
+（1）定  义：struct file_operations  hello_ops;
+（2）初始化：hello_ops.owner = THIS_MOUDLE;
+
+
+------------------------------------------------------------------------
+
+【8】cdev 结构体                                                                -----------------> 类   
+
+（1）定义 cdev结构体
+     struct cdev  cdev；
+
+
+（2）初始化 cdev结构体
+
+     函数原型：void cdev_init(struct cdev *cdev, const struct file_operations *fops)
+     cdev.owner =THIS_MODULE;
+     cdev_init(&cdev，&hello_ops);           //将file_operations与驱动绑定。（初始化 cdev 结构体，并关联 file_operations）
+
+
+
+（3）注册 cdev结构体
+
+     函数原型:int cdev_add(struct cdev *p, dev_t dev, unsigned count)
+     放在加载函数中
+
+     int rec =0；
+     if((rec =cdev_add(&cdev,devno,1))<0)    //将字符驱动注册至内核。（添加 cdev 到系统）
+      {
+		printk(KERN_INFO "cdev_add error\n");
+        return rec;
+     }
+
+
+
+（4）释放 cdev结构体
+      函数原型：void cdev_del(struct cdev *p);
+      放在卸载函数中
+
+      cdev_del(&cdev)                     //释放cdev结构体
+
+
+
+
+【9】cdev结构体 动态注册（包含了：定义、初始化、注册）
+ 	struct cdev *cdev_alloc(void)
+
+	例子：strutc cdev * cdev；
+		cdev= cdev_alloc();
+
+
+    
+ 
+
+	
+
+
+
+
+
+
+  
