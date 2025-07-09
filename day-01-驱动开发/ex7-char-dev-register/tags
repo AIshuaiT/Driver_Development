@@ -1,0 +1,20 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+KERNELDIR	Makefile	/^KERNELDIR ?= \/lib\/modules\/$(shell uname -r)\/build M=$(PWD) modules$/;"	m
+PWD	Makefile	/^PWD := $(shell pwd)$/;"	m
+cdev	char-dev-reg.c	/^struct cdev cdev;$/;"	v	typeref:struct:cdev
+char_reg_setup_cdev	char-dev-reg.c	/^static void char_reg_setup_cdev (void)$/;"	f	file:	signature:(void)
+dev	char-dev-reg.c	/^dev_t dev = 0;$/;"	v
+hello_2_exit	char-dev-reg.c	/^module_exit (hello_2_exit);$/;"	v
+hello_2_exit	char-dev-reg.c	/^static void __exit hello_2_exit (void)$/;"	f	file:	signature:(void)
+hello_2_init	char-dev-reg.c	/^module_init (hello_2_init);$/;"	v
+hello_2_init	char-dev-reg.c	/^static int __init hello_2_init (void)$/;"	f	file:	signature:(void)
+hello_fops	char-dev-reg.c	/^struct file_operations hello_fops = {$/;"	v	typeref:struct:file_operations
+hello_major	char-dev-reg.c	/^int hello_major = 250;$/;"	v
+hello_minor	char-dev-reg.c	/^int hello_minor = 0;$/;"	v
+number_of_devices	char-dev-reg.c	/^int number_of_devices = 1;$/;"	v
+obj-m	Makefile	/^    obj-m := char-dev-reg.o$/;"	m

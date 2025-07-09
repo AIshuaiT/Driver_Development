@@ -1,0 +1,101 @@
+搭建字符设备框架流程：
+
+（1）创建、注册（申请）、释放【设备号】
+      1—创建设备号dev_t
+						static  int  hello_major = 250;  //主设备号
+						static  int  hello_minor = 0;     //次设备号
+						dev_t  devno = MKDEV(hello_major, hello_minor);
+
+      2—申请设备号
+						ret = register_chrdev_region(devno, number_of_device, "hello");
+						if (ret < 0) {
+							printk("failed from register_chrdev_region\n");
+							return ret;
+						} 
+
+      3—释放设备号
+						unregister_chrdev_region(devno, 1)；
+
+		
+
+
+
+		
+（2）设置【操作集合f_ops】
+    定义file_operations 
+						 struct file_operations  f_ops = {
+							.owner = THIS_MODULE,
+						 };
+
+
+
+
+
+
+（3）定义、初始化、注册、释放【字符设备结构体 cdev】
+	1、定义 
+			   a、 struct cdev cdev;     ----推荐
+			   b、 struct cdev *cdev;
+				   cdev = cdev_alloc();
+
+
+ 	2、初始化
+				cdev_init(&cdev, &hello_ops);
+				cdev.owner = THIS_MODULES;
+
+
+	3、字符设备的注册
+				cdev_add(&cdev, devno, 1);
+
+
+	4、字符设备的注销
+				cdev_del(&cdev);
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------------
+   ||		  	  			||												 			 ||
+   ||						||															 ||
+   \/						\/															 \/
+MODULE_LICENSE         module_name_init()									     module_name_exit()
+版权声明	 			   加载模块													      卸载模块
+   ||                       ||                                                           ||
+   ||						||															 ||
+   ||         --------------------------------------------- 			    --------------------------------
+   \/		   ||				||						||					 ||						    ||
+  "GPL" 	   ||				||						||					 ||						    ||
+  			   \/				\/	            		\/					 \/						    \/
+			（创建设备号）    【设置操作集合f_ops】        {定义cdev}               ||                         ||
+		 dev_t devno    	file_operations			struct cdev cdev;		 ||						    ||	
+		 devno=MKDEV();     模块（对象）方法		        ||             		 ||						    ||
+			   ||				||						||					 ||						    ||
+		  	   ||               ||                      ||                   ||                         ||
+			   ||				||						||					 ||						    ||
+			   \/				\/						\/					 \/						    \/		   
+   register_chrdev_region()    f_ops====> cdev_init(&cdev,&hello_fops);  unregister_chrdev_region()   cdev_del(&cdev)
+	     （注册设备号）	     {.onwer   			{初始化 cdev}			    （释放设备号）		           {释放cdev}
+	                          .open                     || 
+                              .release                  || 
+							 }                          \/
+				                               cdev_add(&cdev,devno,1)
+				                                     {注册cdev}							
+1---()
+2---[]
+3---{}				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+
